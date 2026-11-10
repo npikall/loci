@@ -1,0 +1,7 @@
+[package]
+name = "loci"
+version = "0.1.0"
+entrypoint = "lib.typ"
+authors = []
+license = "MIT"
+description = "Study questions for the loci server."
