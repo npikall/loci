@@ -5,6 +5,38 @@
 // `typst compile --input answers=hide` prints a sheet to test yourself on paper.
 #let _answers-shown = sys.inputs.at("answers", default: "show") != "hide"
 
+/// `typst compile --input seed=anna` draws other values for `vars`. The seed is
+/// any text, so a student's name or number gives each of them their own sheet.
+#let seed = sys.inputs.at("seed", default: "0")
+
+// FNV-1a with one xorshift round to spread similar seeds apart. Everything
+// stays below 2^56, because Typst integers fail on overflow.
+#let _hash(text) = {
+  let wrap = 4294967296
+  let h = 2166136261
+  for char in text.codepoints() {
+    h = calc.rem(h.bit-xor(str.to-unicode(char)) * 16777619, wrap)
+  }
+  h = h.bit-xor(calc.rem(h.bit-lshift(13), wrap))
+  h = h.bit-xor(h.bit-rshift(17))
+  h.bit-xor(calc.rem(h.bit-lshift(5), wrap))
+}
+
+// Picks one candidate per variable. Each pick depends on the seed, the
+// question and the variable's name, so adding a variable keeps the others.
+#let _draw(number, vars) = {
+  let drawn = (:)
+  for (name, candidates) in vars {
+    assert(
+      type(candidates) == array and candidates.len() > 0,
+      message: "`vars." + name + "` must be a non-empty array of candidates",
+    )
+    let pick = _hash(seed + "/" + str(number) + "/" + name)
+    drawn.insert(name, candidates.at(calc.rem(pick, candidates.len())))
+  }
+  drawn
+}
+
 // `("baz")` is a plain value in Typst, not an array.
 #let _as-array(value) = if type(value) == array { value } else { (value,) }
 
@@ -142,7 +174,14 @@
 
 /// Computed question: the answer is any Typst content, including code results.
 /// `hint` can be opened before revealing the answer.
-#let q(prompt, answer, n: none, hint: none) = _numbered("Question", n, card => {
+///
+/// `vars` names arrays of candidates, for example `(a: range(2, 10))`. One
+/// value per name is drawn from `seed`. `prompt`, `answer` and `hint` may then
+/// be functions that take the drawn values: `v => [What is #v.a squared?]`.
+#let q(prompt, answer, n: none, hint: none, vars: (:)) = _numbered("Question", n, card => {
+  let drawn = _draw(card.number, vars)
+  let fill(part) = if type(part) == function { part(drawn) } else { part }
+  let (prompt, answer, hint) = (prompt, answer, hint).map(fill)
   if target() == "html" {
     _html-card("section", "loci-question", card, prompt, {
       _html-hint(hint)

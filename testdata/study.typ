@@ -9,3 +9,9 @@
 }
 
 #sc("Which is a noble gas?", ok: "Neon", err: "Iron", hint: [Glows in signs.], why: [Group 18.])
+
+#q(
+  vars: (a: (6,), b: (7,)),
+  v => [What is #v.a times #v.b?],
+  v => [The product is #(v.a * v.b).],
+)

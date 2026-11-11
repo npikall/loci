@@ -399,3 +399,17 @@ func TestRenderEmitsHintAndExplanation(t *testing.T) {
 		}
 	}
 }
+
+func TestRenderFillsDrawnValuesIntoQuestion(t *testing.T) {
+	usePackage(t)
+	page, err := render("testdata/study.typ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	html := string(page)
+	for _, want := range []string{`What is 6 times 7?`, `The product is 42.`} {
+		if !strings.Contains(html, want) {
+			t.Errorf("rendered page lacks %q", want)
+		}
+	}
+}

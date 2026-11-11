@@ -1,12 +1,13 @@
 // Run with `loci examples/example.typ`, or compile a printable copy with
-// `typst compile examples/example.typ`.
+// `typst compile examples/example.typ`. Add `--input answers=hide` to print
+// it without the answers.
 #import "@local/loci:0.1.0": mc, q, sc
 
 #set document(title: "Loci feature tour")
 
 // Text outside questions shows in List mode and in the PDF, not on cards.
-This file shows every feature. Headings become sections in the section menu,
-and choosing a parent section includes its subsections.
+This file shows every feature. Headings become sections in the section menu, and
+choosing a parent section includes its subsections.
 
 = Question types
 
@@ -30,8 +31,7 @@ and choosing a parent section includes its subsections.
 
 // `q`: reveal the answer, then grade yourself with "Knew it" or "Missed it".
 #q("What does the method of loci use to organise memories?")[
-  Familiar places. You walk through them in your mind and pick up what you
-  placed there.
+  Familiar places. You walk through them in your mind and pick up what you placed there.
 ]
 
 = Rich content
@@ -63,6 +63,24 @@ and choosing a parent section includes its subsections.
 #for base in range(2, 5) {
   q("What is " + str(base) + " cubed?")[#calc.pow(base, 3)]
 }
+
+= Random values
+
+// `vars` names arrays of candidates. One value per name is drawn, and the
+// prompt and the answer are functions of the drawn values. Compile with
+// `--input seed=anna` to draw other values.
+#q(
+  vars: (a: range(2, 10), b: range(11, 20)),
+  v => [What is $#v.a dot #v.b$?],
+  v => [$#(v.a * v.b)$],
+)
+
+#q(
+  vars: (speed: (30, 50, 80), hours: (0.5, 1.5, 2.5)),
+  v => [A car drives #v.speed km/h for #v.hours hours. How far does it get?],
+  v => [#(v.speed * v.hours) km],
+  hint: v => [Multiply #v.speed by #v.hours.],
+)
 
 = Exam frequency
 
