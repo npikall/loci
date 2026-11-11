@@ -32,8 +32,10 @@ gotpm install package/
 ```
 
 ```sh
-loci study.typ            # serve and open in the browser
-typst compile study.typ   # printable PDF
+loci study.typ                               # serve and open in the browser
+loci --no-open --port 5000 study.typ         # fixed port, no browser
+typst compile study.typ                      # printable PDF with answers
+typst compile --input answers=hide study.typ # sheet to test yourself on paper
 ```
 
 | Function | Question type                                     |
@@ -42,12 +44,30 @@ typst compile study.typ   # printable PDF
 | `mc`     | Multiple choice, at least one `ok` option         |
 | `q`      | Free recall, reveal the answer and grade yourself |
 
-Prompts, options and answers accept any Typst content. The optional `n` records
-how often a question was asked, for example in past exams. Headings become
+Prompts, options and answers accept any Typst content. Headings become
 sections you can filter by. See `examples/example.typ` for a tour of every
 feature.
 
-Reload the page to pick up edits. Progress is saved in the browser, per file.
+| Argument | On           | Meaning                                                 |
+| -------- | ------------ | ------------------------------------------------------- |
+| `n`      | all          | How often the question was asked, e.g. in past exams    |
+| `hint`   | all          | Help that can be opened before answering                |
+| `why`    | `sc`, `mc`   | Explanation shown once the question is checked          |
+
+## Studying
+
+- **Cards** asks one question at a time and brings a missed card back a few
+  cards later. **List** shows the whole document, with search.
+- A card is mastered after three right answers in a row. Right answers also
+  push its next review further away: 1, 3, 7, 14, 30, then 60 days. The filter
+  **Due for review** picks what is due today.
+- **Flag** cards you want to come back to and study them with the filter
+  **Flagged**.
+- Press `?` for the keyboard shortcuts. Everything can be undone with `U`.
+
+The page reloads itself when the file, or another file in its folder, changes.
+Progress is saved in the browser, per file. **Menu › Export progress** writes
+it to a file that **Import progress** reads back, on this or another machine.
 
 ## Development
 

@@ -1,12 +1,16 @@
 :root {
   color-scheme: light dark;
   --bg: light-dark(#f0f0ee, #1a1a1a);
+  --surface: light-dark(#fafaf8, #222222);
   --text: light-dark(#1e1e1e, #dcdcdc);
   --muted: light-dark(#6e6e6e, #969696);
+  --line: light-dark(#c9c9c5, #3d3d3d);
   --inverted: light-dark(#f8f8f8, #141414);
   --primary: light-dark(#e94f0d, #ff6122);
   --right: light-dark(#1f8a4c, #3ec27a);
+  --wrong: light-dark(#c4302b, #ff6b6b);
   --control-height: 2.5rem;
+  --pager-height: 7.5rem;
 }
 
 :root[data-theme="light"] {
@@ -34,27 +38,64 @@
 }
 
 body {
-  max-width: 44rem;
+  max-width: 46rem;
   margin: 0 auto;
-  padding: 3rem 1rem;
+  padding: 1rem 1rem 3rem;
   background: var(--bg);
   color: var(--text);
-  font: 14px/1.6 "Spline Sans Mono", ui-monospace, Menlo, Consolas, monospace;
+  font: 15px/1.6 "Spline Sans Mono", ui-monospace, Menlo, Consolas, monospace;
 }
 
 h1,
 h2,
 h3 {
+  margin: 2.5rem 0 0;
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
+[hidden] {
+  display: none !important;
+}
+
+kbd {
+  margin-left: 0.4em;
+  padding: 0.05em 0.4em;
+  border: 1px solid currentColor;
+  font: inherit;
+  font-size: 0.85em;
+  opacity: 0.65;
+}
+
+/* Key hints only help where the keys work: card mode with a keyboard. */
+body.loci-list .loci-question kbd,
+body.loci-list .loci-summary kbd {
+  display: none;
+}
+
+@media (hover: none) {
+  kbd {
+    display: none;
+  }
+}
+
+/* Question card */
+
 .loci-question {
-  margin: 2.5rem 0;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--primary);
+  margin: 1.5rem 0;
+  padding: 1.25rem 1.5rem 1rem;
+  border: 1px solid var(--line);
+  border-top: 2px solid var(--primary);
+  background: var(--surface);
+}
+
+.loci-head {
+  display: flex;
+  gap: 0.25rem 1rem;
+  align-items: baseline;
+  flex-wrap: wrap;
 }
 
 .loci-label {
@@ -64,109 +105,414 @@ h3 {
   letter-spacing: 0.08em;
 }
 
+.loci-crumb {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.loci-question .loci-flag {
+  margin: 0;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.loci-question .loci-flag:hover {
+  border-color: var(--line);
+  color: var(--text);
+}
+
+.loci-question .loci-flag[aria-pressed="true"] {
+  color: var(--primary);
+}
+
 .loci-prompt {
-  margin: 0.5rem 0 1rem;
-  font-size: 1.1rem;
+  margin: 0.75rem 0 1.25rem;
+  font-size: 1.25rem;
   font-weight: 500;
+  line-height: 1.45;
 }
 
 .loci-prompt p,
 .loci-options p,
-.loci-question details p {
+.loci-question details p,
+.loci-why p {
   margin: 0;
+}
+
+.loci-question img,
+.loci-question svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.loci-question table {
+  border-collapse: collapse;
+}
+
+.loci-question td,
+.loci-question th {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--line);
+}
+
+/* Options */
+
+.loci-options {
+  display: grid;
+  gap: 0.4rem;
 }
 
 .loci-options label {
   display: flex;
   gap: 0.75rem;
-  align-items: baseline;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--muted);
-  border-bottom-width: 0;
+  align-items: center;
+  min-height: 2.6rem;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid var(--line);
+  background: var(--bg);
   cursor: pointer;
 }
 
-.loci-options label:last-child {
-  border-bottom-width: 1px;
+.loci-options label > span {
+  flex: 1;
 }
 
-.loci-options label:hover {
-  background: color-mix(in srgb, var(--primary) 12%, transparent);
+.loci-options label:hover,
+.loci-options label:has(:checked) {
+  border-color: var(--primary);
+}
+
+.loci-options label:has(:checked) {
+  background: color-mix(in srgb, var(--primary) 12%, var(--bg));
 }
 
 .loci-options input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
   accent-color: var(--primary);
 }
 
-.loci-checked label:has([value="ok"]) {
+body.loci-cards .loci-options {
+  counter-reset: option;
+}
+
+body.loci-cards .loci-options label::before {
+  min-width: 1.5em;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+  content: counter(option);
+  counter-increment: option;
+}
+
+@media (hover: none) {
+  body.loci-cards .loci-options label::before {
+    display: none;
+  }
+}
+
+/* After checking: every option says what it was. */
+
+.loci-checked label {
+  pointer-events: none;
+}
+
+.loci-checked label::after {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.loci-checked label:has([value="ok"]:checked) {
+  border-color: var(--right);
+  background: color-mix(in srgb, var(--right) 22%, var(--bg));
+}
+
+.loci-checked label:has([value="ok"]:checked)::after {
+  color: var(--right);
+  content: "✓ correct";
+}
+
+.loci-checked label:has([value="ok"]:not(:checked)) {
+  border: 1px dashed var(--right);
+  background: var(--bg);
+}
+
+.loci-checked label:has([value="ok"]:not(:checked))::after {
+  color: var(--right);
+  content: "← correct answer";
+}
+
+.loci-checked label:has([value="err"]:checked) {
+  border-color: var(--wrong);
+  background: color-mix(in srgb, var(--wrong) 18%, var(--bg));
+}
+
+.loci-checked label:has([value="err"]:checked)::after {
+  color: var(--wrong);
+  content: "✗ your pick";
+}
+
+.loci-checked label:has([value="err"]:not(:checked)) {
+  border-color: var(--line);
+  background: var(--bg);
+  color: var(--muted);
+}
+
+.loci-checked button[type="submit"] {
+  display: none;
+}
+
+/* Hint, answer, explanation */
+
+.loci-question summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.loci-question summary::-webkit-details-marker {
+  display: none;
+}
+
+.loci-tip {
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.loci-tip > summary {
+  display: inline-block;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.loci-tip > summary:hover {
+  color: var(--primary);
+}
+
+.loci-tip > div {
+  margin-top: 0.4rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--line);
+  color: var(--text);
+}
+
+.loci-answer > summary {
+  display: inline-block;
+}
+
+.loci-answer:not([open]) .loci-open,
+.loci-answer[open] .loci-closed {
+  display: none;
+}
+
+.loci-answer[open] > summary {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.loci-answer > div {
+  margin-top: 0.4rem;
+  padding: 0.9rem 1rem;
+  border-left: 2px solid var(--right);
+  background: var(--bg);
+  font-size: 1.05rem;
+}
+
+.loci-why {
+  display: none;
+  margin-top: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-left: 2px solid var(--muted);
+  background: var(--bg);
+}
+
+.loci-checked .loci-why {
+  display: block;
+}
+
+.loci-verdict {
+  margin-top: 0.9rem;
+  font-weight: 700;
+}
+
+.loci-verdict:empty {
+  display: none;
+}
+
+.loci-verdict[data-kind="right"] {
+  color: var(--right);
+}
+
+.loci-verdict[data-kind="wrong"] {
+  color: var(--wrong);
+}
+
+.loci-verdict[data-kind="note"] {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* Buttons inside cards and the summary */
+
+.loci-actions,
+.loci-rate {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.loci-actions {
+  margin-top: 1rem;
+}
+
+.loci-actions:not(:has(> :not([hidden]))) {
+  display: none;
+}
+
+.loci-actions button,
+.loci-answer:not([open]) > summary {
+  min-height: 2.75rem;
+  padding: 0 1.25rem;
+  border: 1px solid var(--text);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 500;
+  line-height: 2.75rem;
+  cursor: pointer;
+}
+
+.loci-actions .loci-primary,
+.loci-answer:not([open]) > summary {
+  background: var(--text);
+  color: var(--inverted);
+}
+
+.loci-actions .loci-primary:hover,
+.loci-answer:not([open]) > summary:hover {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.loci-rate {
+  flex: 1;
+}
+
+.loci-rate button {
+  flex: 1;
+}
+
+.loci-rate [data-right="true"] {
+  border-color: var(--right);
+  color: var(--right);
+}
+
+.loci-rate [data-right="true"]:hover {
   background: var(--right);
   color: var(--inverted);
 }
 
-.loci-checked label:has([value="err"]:checked) {
-  background: var(--primary);
+.loci-rate [data-right="false"] {
+  border-color: var(--wrong);
+  color: var(--wrong);
+}
+
+.loci-rate [data-right="false"]:hover {
+  background: var(--wrong);
   color: var(--inverted);
 }
 
-.loci-question button,
-.loci-question summary {
-  display: inline-block;
-  margin-top: 1rem;
-  padding: 0.4rem 0.9rem;
-  border: 0;
-  border-radius: 0;
-  background: var(--text);
-  color: var(--inverted);
-  font: inherit;
+.loci-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.6rem;
+  align-items: center;
+  margin-top: 1.25rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
   font-size: 12px;
-  letter-spacing: 0.08em;
+}
+
+.loci-chip {
+  padding: 0 0.5em;
+  border: 1px solid currentColor;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  cursor: pointer;
 }
 
-.loci-question button:hover,
-.loci-question summary:hover {
-  background: var(--primary);
+.loci-chip[data-status="mastered"] {
+  color: var(--right);
 }
 
-.loci-question details > :not(summary) {
-  margin-top: 1rem;
+.loci-chip[data-status="learning"] {
+  color: var(--primary);
 }
 
-[hidden] {
-  display: none !important;
+.loci-dots {
+  letter-spacing: 0.15em;
 }
+
+/* Mode switches */
 
 body.loci-cards > :not(.loci-ui, .loci-question),
+body.loci-searching > :not(.loci-ui, .loci-question),
 body.loci-list .loci-cards-only,
 body.loci-cards .loci-list-only {
   display: none;
 }
 
 body.loci-cards {
-  padding-bottom: 17rem;
+  padding-bottom: calc(var(--pager-height) + 2rem);
 }
+
+/* Shared controls */
 
 .loci-ui button,
 .loci-ui select,
-.loci-rate button {
+.loci-ui input[type="search"],
+.loci-menu > summary {
   min-height: var(--control-height);
-  padding: 0 0.9rem;
-  border: 1px solid var(--muted);
+  padding: 0 0.8rem;
+  border: 1px solid var(--line);
   border-radius: 0;
-  background: transparent;
+  background: var(--surface);
   color: var(--text);
   font: inherit;
+  font-size: 13px;
   cursor: pointer;
 }
 
+.loci-ui input[type="search"] {
+  flex: 1 1 10rem;
+  min-width: 0;
+  cursor: text;
+}
+
 .loci-ui button:hover:not(:disabled),
-.loci-ui select:hover {
+.loci-ui select:hover,
+.loci-menu > summary:hover {
   border-color: var(--primary);
 }
 
 .loci-ui button:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: default;
 }
 
@@ -176,30 +522,127 @@ body.loci-cards {
   color: var(--inverted);
 }
 
+.loci-ui button.loci-link {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.loci-ui button.loci-link:hover:not(:disabled) {
+  color: var(--primary);
+}
+
+/* Header */
+
 .loci-bar {
-  position: sticky;
-  z-index: 1;
-  top: 0;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--muted);
+  padding: 0.5rem 0 0.75rem;
+  border-bottom: 1px solid var(--line);
   background: var(--bg);
+}
+
+body.loci-list .loci-bar {
+  position: sticky;
+  z-index: 2;
+  top: 0;
 }
 
 .loci-heading {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1rem;
-  align-items: baseline;
-  margin-bottom: 0.5rem;
+  gap: 0.5rem;
+  align-items: center;
 }
 
-#loci-theme {
-  margin-left: auto;
+#loci-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.loci-seg {
+  display: inline-flex;
+}
+
+.loci-seg button + button {
+  border-left: 0;
+}
+
+.loci-menu {
+  position: relative;
+}
+
+.loci-menu > summary {
+  display: flex;
+  align-items: center;
+  list-style: none;
+}
+
+.loci-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.loci-menu[open] > summary {
+  border-color: var(--primary);
+}
+
+.loci-menu-items {
+  position: absolute;
+  z-index: 3;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  display: grid;
+  min-width: 13rem;
+  border: 1px solid var(--text);
+  background: var(--surface);
+  box-shadow: 4px 4px 0 color-mix(in srgb, var(--text) 20%, transparent);
+}
+
+.loci-menu-items > button,
+.loci-menu-items > select {
+  width: 100%;
+  border-width: 0 0 1px;
+  text-align: left;
+}
+
+.loci-menu-items > :last-of-type {
+  border-bottom: 0;
+}
+
+.loci-ui button.loci-danger {
+  color: var(--wrong);
+}
+
+.loci-overview {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 0.6rem 0;
+}
+
+.loci-meter {
+  display: flex;
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  background: var(--line);
+}
+
+.loci-meter [data-part="mastered"] {
+  background: var(--right);
+}
+
+.loci-meter [data-part="learning"] {
+  background: var(--primary);
 }
 
 #loci-stats,
-.loci-meta,
-.loci-hint {
+.loci-pager-info {
   color: var(--muted);
   font-size: 12px;
 }
@@ -211,103 +654,109 @@ body.loci-cards {
   align-items: center;
 }
 
-.loci-seg {
-  display: inline-flex;
+.loci-controls select {
+  flex: 1 1 9rem;
+  min-width: 0;
+  text-overflow: ellipsis;
 }
 
-.loci-seg button + button {
-  border-left: 0;
+/* Summary */
+
+.loci-summary {
+  margin: 1.5rem 0;
+  padding: 1.25rem 1.5rem 1.5rem;
+  border: 1px solid var(--line);
+  border-top: 2px solid var(--primary);
+  background: var(--surface);
 }
 
-.loci-question .loci-rate {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
+.loci-summary p {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
 }
 
-.loci-question .loci-rate button {
-  margin: 0;
-  background: transparent;
-  color: var(--text);
-}
-
-.loci-question .loci-rate [data-right="true"]:hover {
-  border-color: var(--right);
-  background: var(--right);
-  color: var(--inverted);
-}
-
-.loci-question .loci-rate [data-right="false"]:hover {
-  border-color: var(--primary);
-  background: var(--primary);
-  color: var(--inverted);
-}
-
-.loci-verdict {
+.loci-summary .loci-score {
   margin-top: 0.75rem;
+  color: var(--text);
+  font-size: 1.6rem;
   font-weight: 700;
 }
 
-.loci-verdict:empty {
-  display: none;
-}
-
-.loci-meta {
-  margin-top: 1rem;
-}
-
-.loci-checked label {
-  pointer-events: none;
-}
-
-.loci-checked button[type="submit"] {
-  display: none;
-}
-
-body.loci-cards .loci-options {
-  counter-reset: option;
-}
-
-body.loci-cards .loci-options label::before {
+.loci-empty {
+  margin: 2rem 0;
   color: var(--muted);
-  content: counter(option);
-  counter-increment: option;
 }
 
-.loci-summary {
-  margin: 2.5rem 0;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--primary);
-}
-
-.loci-summary button + button {
-  margin-left: 0.4rem;
-}
+/* Pager */
 
 .loci-pager {
   position: fixed;
+  z-index: 2;
   right: 0;
   bottom: 0;
   left: 0;
-  padding: 0.75rem 1rem;
-  border-top: 1px solid var(--muted);
+  border-top: 1px solid var(--line);
   background: var(--bg);
+}
+
+.loci-progress {
+  height: 4px;
+  background: var(--line);
+}
+
+.loci-progress span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.2s;
+}
+
+.loci-pager-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  max-width: 46rem;
+  margin: 0.6rem auto 0;
+  padding: 0 1rem;
+}
+
+.loci-pager-info {
+  gap: 1rem;
+  justify-content: center;
+  margin: 0.4rem auto 0.6rem;
+}
+
+#loci-prev,
+#loci-next {
+  flex: none;
+  min-width: 3rem;
+  font-size: 1rem;
 }
 
 #loci-strip {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  justify-content: center;
-  max-height: 6rem;
-  margin-bottom: 0.5rem;
-  padding: 0.25rem;
-  overflow-y: auto;
+  flex: 1;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 3px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+/* Centres a short strip without cutting off the start of a long one. */
+#loci-strip::before,
+#loci-strip::after {
+  flex: 1;
+  content: "";
 }
 
 #loci-strip button {
-  min-width: var(--control-height);
-  padding: 0 0.3rem;
+  position: relative;
+  flex: none;
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0 0.25rem;
+  font-size: 12px;
 }
 
 #loci-strip button[data-grade="true"] {
@@ -317,8 +766,9 @@ body.loci-cards .loci-options label::before {
 }
 
 #loci-strip button[data-grade="false"] {
-  border-color: var(--primary);
-  color: var(--primary);
+  border-color: var(--wrong);
+  background: color-mix(in srgb, var(--wrong) 18%, var(--surface));
+  color: var(--wrong);
 }
 
 #loci-strip button.loci-active {
@@ -326,21 +776,106 @@ body.loci-cards .loci-options label::before {
   outline-offset: 1px;
 }
 
-.loci-pager-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 0.75rem;
-  align-items: center;
-  justify-content: center;
+#loci-strip button.loci-active[data-grade="null"] {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--inverted);
 }
 
-.loci-hint {
-  margin: 0.5rem 0 0;
-  text-align: center;
+#loci-strip button[data-flag]::after {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 6px;
+  height: 6px;
+  background: var(--primary);
+  content: "";
 }
 
 #loci-pos {
-  min-width: 5rem;
   font-variant-numeric: tabular-nums;
-  text-align: center;
+}
+
+/* Dialog and toast */
+
+.loci-dialog {
+  max-width: min(30rem, calc(100vw - 2rem));
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--text);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.loci-dialog::backdrop {
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+}
+
+.loci-dialog dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.4rem 1.25rem;
+  margin: 1rem 0 1.25rem;
+}
+
+.loci-dialog dt {
+  color: var(--primary);
+  white-space: nowrap;
+}
+
+.loci-dialog dd {
+  margin: 0;
+}
+
+.loci-toast {
+  position: fixed;
+  z-index: 4;
+  bottom: calc(var(--pager-height) + 1rem);
+  left: 50%;
+  padding: 0.5rem 1rem;
+  background: var(--text);
+  color: var(--inverted);
+  font-size: 13px;
+  transform: translateX(-50%);
+}
+
+body.loci-list .loci-toast {
+  bottom: 1rem;
+}
+
+@media (max-width: 32rem) {
+  body {
+    padding-top: 0.5rem;
+  }
+
+  .loci-question,
+  .loci-summary {
+    margin: 1rem 0;
+    padding: 1rem 1rem 0.75rem;
+  }
+
+  .loci-prompt {
+    font-size: 1.1rem;
+  }
+
+  #loci-stats {
+    flex-basis: 100%;
+  }
+
+  .loci-controls select {
+    flex-basis: 6rem;
+    padding: 0 0.4rem;
+  }
+
+  .loci-options label {
+    min-height: 3rem;
+  }
+
+  .loci-overview {
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .loci-meter {
+    flex-basis: 100%;
+  }
 }

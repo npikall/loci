@@ -7,20 +7,27 @@
 //   tape     the cards of this round, in play order; a miss adds a later repeat
 //   session  a tape and the position on it; pos === tape.length is the summary
 //   mastered the last MASTERY_STREAK grades of a card were all right
+//   reviewed per card id, the day number of its last grade
+//   due      a card is due when its streak-based interval since that day has passed
+//   flags    card ids the student marked to come back to
 //   theme    color scheme of the page; stored apart from study state so Undo never changes it
 
 export const MASTERY_STREAK = 3;
 export const REPEAT_GAP = 3;
+/** Days to wait after the last grade, by streak. Longer streaks keep the last interval. */
+export const REVIEW_DAYS = [0, 1, 3, 7, 14, 30, 60];
 
 const SEPARATOR = " › ";
 const CHOICES = {
   mode: ["cards", "list"],
-  filter: ["all", "due", "missed", "new"],
+  filter: ["all", "review", "due", "missed", "new", "flagged"],
   order: ["document", "shuffle", "frequency", "weakest"],
 };
 
 export const emptyState = () => ({
   history: {},
+  reviewed: {},
+  flags: {},
   session: { tape: [], pos: 0 },
   prefs: { mode: "cards", filter: "all", order: "document", section: "*" },
 });
@@ -73,17 +80,36 @@ export function cardStats(log = "") {
   return { seen, missed: log.split("x").length - 1, streak, status };
 }
 
-export function overview(deck, history) {
-  const counts = { mastered: 0, learning: 0, new: 0 };
-  for (const { id } of deck) counts[cardStats(history[id]).status]++;
+/** Local calendar day as a whole number, so "tomorrow" starts at midnight. */
+export function dayOf(date = new Date()) {
+  return Math.floor((date.getTime() - date.getTimezoneOffset() * 60_000) / 86_400_000);
+}
+
+/** The day a card should come back. Cards without a recorded day are due at once. */
+export function dueDay(log = "", reviewedOn) {
+  if (!Number.isInteger(reviewedOn)) return -Infinity;
+  const { streak } = cardStats(log);
+  return reviewedOn + REVIEW_DAYS[Math.min(streak, REVIEW_DAYS.length - 1)];
+}
+
+export const isDue = (log, reviewedOn, today) => dueDay(log, reviewedOn) <= today;
+
+export function overview(deck, history, reviewed = {}, today = dayOf()) {
+  const counts = { mastered: 0, learning: 0, new: 0, due: 0 };
+  for (const { id } of deck) {
+    counts[cardStats(history[id]).status]++;
+    if (isDue(history[id], reviewed[id], today)) counts.due++;
+  }
   return counts;
 }
 
 const FILTERS = {
   all: () => true,
-  due: (log) => cardStats(log).status !== "mastered",
-  missed: (log) => log?.endsWith("x") ?? false,
-  new: (log) => cardStats(log).status === "new",
+  review: ({ log, reviewedOn, today }) => isDue(log, reviewedOn, today),
+  due: ({ log }) => cardStats(log).status !== "mastered",
+  missed: ({ log }) => log?.endsWith("x") ?? false,
+  new: ({ log }) => cardStats(log).status === "new",
+  flagged: ({ flagged }) => flagged,
 };
 
 function shuffled(items, random) {
@@ -115,11 +141,24 @@ function ordered(cards, history, order, random) {
 
 const tapeOf = (ids) => ({ pos: 0, tape: ids.map((id) => ({ id, grade: null })) });
 
-export function startSession(deck, history, prefs, random = Math.random) {
-  const chosen = deck.filter(
-    (card) => matchesSection(card.section, prefs.section) && FILTERS[prefs.filter](history[card.id]),
-  );
+/** `progress` carries what the review and flagged filters need: { reviewed, flags, today }. */
+export function startSession(deck, history, prefs, random = Math.random, progress = {}) {
+  const { reviewed = {}, flags = {}, today = dayOf() } = progress;
+  const wanted = (card) =>
+    FILTERS[prefs.filter]({
+      log: history[card.id],
+      reviewedOn: reviewed[card.id],
+      flagged: flags[card.id] === true,
+      today,
+    });
+  const chosen = deck.filter((card) => matchesSection(card.section, prefs.section) && wanted(card));
   return tapeOf(ordered(chosen, history, prefs.order, random).map((card) => card.id));
+}
+
+/** Starts a round from everything a state knows. */
+export function newRound(state, deck, random = Math.random, today = dayOf()) {
+  const { reviewed, flags } = state;
+  return startSession(deck, state.history, state.prefs, random, { reviewed, flags, today });
 }
 
 function withRepeat(tape, pos) {
@@ -131,7 +170,7 @@ function withRepeat(tape, pos) {
 }
 
 /** Records the grade at the current position. A position is graded only once. */
-export function grade(state, right) {
+export function grade(state, right, today = dayOf()) {
   const { tape, pos } = state.session;
   const entry = tape[pos];
   if (!entry || entry.grade !== null) return state;
@@ -139,6 +178,7 @@ export function grade(state, right) {
   return {
     ...state,
     history: { ...state.history, [entry.id]: (state.history[entry.id] ?? "") + (right ? "o" : "x") },
+    reviewed: { ...state.reviewed, [entry.id]: today },
     session: { pos, tape: right ? graded : withRepeat(graded, pos) },
   };
 }
@@ -170,7 +210,13 @@ export function summary({ tape }) {
 export const repeatMissed = ({ tape }) => tapeOf(missedIds(tape));
 
 export function resetProgress(state, deck) {
-  return { ...state, history: {}, session: startSession(deck, {}, state.prefs) };
+  const cleared = { ...state, history: {}, reviewed: {}, flags: {} };
+  return { ...cleared, session: newRound(cleared, deck) };
+}
+
+export function toggleFlag(state, id) {
+  const { [id]: was, ...rest } = state.flags;
+  return { ...state, flags: was ? rest : { ...rest, [id]: true } };
 }
 
 const isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -186,6 +232,16 @@ function parseJson(text) {
 function parseHistory(raw) {
   if (!isRecord(raw)) return {};
   return Object.fromEntries(Object.entries(raw).filter(([, log]) => typeof log === "string" && /^[ox]+$/.test(log)));
+}
+
+function parseReviewed(raw) {
+  if (!isRecord(raw)) return {};
+  return Object.fromEntries(Object.entries(raw).filter(([, day]) => Number.isInteger(day)));
+}
+
+function parseFlags(raw) {
+  if (!isRecord(raw)) return {};
+  return Object.fromEntries(Object.entries(raw).filter(([, flagged]) => flagged === true));
 }
 
 function parsePrefs(raw, deck) {
@@ -209,12 +265,42 @@ function parseTape(raw, deck) {
 /** The one place stored data enters: keeps what is valid and rebuilds the rest. */
 export function parseSaved(text, deck, random = Math.random) {
   const raw = parseJson(text) ?? {};
-  const history = parseHistory(raw.history);
-  const prefs = parsePrefs(raw.prefs, deck);
+  const kept = {
+    history: parseHistory(raw.history),
+    reviewed: parseReviewed(raw.reviewed),
+    flags: parseFlags(raw.flags),
+    prefs: parsePrefs(raw.prefs, deck),
+  };
   const tape = parseTape(raw.session?.tape, deck);
-  if (tape.length === 0) return { history, prefs, session: startSession(deck, history, prefs, random) };
+  if (tape.length === 0) return { ...kept, session: newRound(kept, deck, random) };
   const pos = Number.isInteger(raw.session.pos) ? raw.session.pos : 0;
-  return { history, prefs, session: goTo({ tape, pos: 0 }, pos) };
+  return { ...kept, session: goTo({ tape, pos: 0 }, pos) };
+}
+
+const BACKUP_FORMAT = "loci-progress-1";
+
+/** A backup holds what was learned, not the round in play or the preferences. */
+export function exportProgress({ history, reviewed, flags }) {
+  return JSON.stringify({ format: BACKUP_FORMAT, history, reviewed, flags }, null, 2);
+}
+
+/** Replaces progress with a backup and starts a new round; null when the text is not a backup. */
+export function importProgress(state, text, deck, random = Math.random) {
+  const raw = parseJson(text);
+  if (!isRecord(raw) || raw.format !== BACKUP_FORMAT) return null;
+  const restored = {
+    ...state,
+    history: parseHistory(raw.history),
+    reviewed: parseReviewed(raw.reviewed),
+    flags: parseFlags(raw.flags),
+  };
+  return { ...restored, session: newRound(restored, deck, random) };
+}
+
+/** Share of a round that is graded, counting each tape position once. */
+export function roundProgress({ tape }) {
+  const done = tape.filter((entry) => entry.grade !== null).length;
+  return { done, total: tape.length, right: tape.filter((entry) => entry.grade === true).length };
 }
 
 export const parseTheme = (raw) => (["light", "dark"].includes(raw) ? raw : "system");
@@ -227,6 +313,9 @@ const NAVIGATION = {
   Home: "first",
   End: "last",
   u: "undo",
+  f: "flag",
+  i: "hint",
+  "?": "help",
 };
 
 function primaryAction(view) {

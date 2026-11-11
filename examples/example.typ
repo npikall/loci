@@ -80,3 +80,19 @@ and choosing a parent section includes its subsections.
   err: ("Oxygen", "Nitrogen"),
   n: 1,
 )
+
+= Hints and explanations
+
+// `hint` can be opened before answering (key I). `why` appears once a choice
+// question is checked.
+#sc(
+  "Which organelle produces most of a cell's ATP?",
+  ok: "Mitochondrion",
+  err: ("Ribosome", "Golgi apparatus", "Lysosome"),
+  hint: [It has its own DNA and a folded inner membrane.],
+  why: [Oxidative phosphorylation runs on the inner mitochondrial membrane.],
+)
+
+#q([What is the derivative of $sin x$?], hint: [It is another trigonometric function.])[
+  $cos x$
+]

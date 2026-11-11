@@ -3,23 +3,32 @@ import { test } from "node:test";
 import {
   MASTERY_STREAK,
   REPEAT_GAP,
+  REVIEW_DAYS,
   cardIds,
   cardStats,
+  dayOf,
+  dueDay,
   emptyState,
+  exportProgress,
   goTo,
   grade,
+  importProgress,
+  isDue,
   keyAction,
   matchesSection,
   move,
+  newRound,
   overview,
   parseSaved,
   parseTheme,
   repeatMissed,
   resetProgress,
+  roundProgress,
   sectionPaths,
   sections,
   startSession,
   summary,
+  toggleFlag,
 } from "./loci-core.js";
 
 const prefs = (over = {}) => ({ ...emptyState().prefs, ...over });
@@ -224,7 +233,8 @@ test("repeat missed builds a round of exactly the missed cards, once each", () =
 
 test("overview counts cards by status", () => {
   const history = { a: "ooo", b: "x" };
-  assert.deepEqual(overview(deck.slice(0, 3), history), { mastered: 1, learning: 1, new: 1 });
+  const reviewed = { a: 10, b: 10 };
+  assert.deepEqual(overview(deck.slice(0, 3), history, reviewed, 10), { mastered: 1, learning: 1, new: 1, due: 2 });
 });
 
 test("reset progress clears history and restarts, keeping preferences", () => {
@@ -356,4 +366,77 @@ test("a stored theme is kept when valid", () => {
 
 test("a missing or unknown theme follows the system", () => {
   for (const raw of [null, "", "sepia", "__proto__"]) assert.equal(parseTheme(raw), "system");
+});
+
+test("a day number changes at local midnight", () => {
+  assert.equal(dayOf(new Date(2026, 0, 2, 0, 0)) - dayOf(new Date(2026, 0, 1, 23, 59)), 1);
+  assert.equal(dayOf(new Date(2026, 0, 1, 0, 0)), dayOf(new Date(2026, 0, 1, 23, 59)));
+});
+
+test("a card comes back after the interval of its streak", () => {
+  assert.equal(dueDay("x", 100), 100);
+  assert.equal(dueDay("o", 100), 100 + REVIEW_DAYS[1]);
+  assert.equal(dueDay("xoo", 100), 100 + REVIEW_DAYS[2]);
+  assert.equal(dueDay("o".repeat(40), 100), 100 + REVIEW_DAYS.at(-1));
+});
+
+test("new cards and cards without a recorded day are due at once", () => {
+  assert.equal(isDue(undefined, undefined, 0), true);
+  assert.equal(isDue("ooo", undefined, 0), true);
+  assert.equal(isDue("o", 100, 100), false);
+  assert.equal(isDue("o", 100, 101), true);
+});
+
+test("grading records the day of the review", () => {
+  assert.deepEqual(grade(fresh(), true, 42).reviewed, { a: 42 });
+});
+
+test("the review filter picks only due cards", () => {
+  const state = { ...fresh(), history: { a: "o", b: "x", c: "ooo" }, reviewed: { a: 10, b: 10, c: 2 }, prefs: prefs({ filter: "review" }) };
+  assert.deepEqual(ids(newRound(state, deck.slice(0, 4), Math.random, 10)), ["b", "c", "d"]);
+  assert.deepEqual(ids(newRound(state, deck.slice(0, 4), Math.random, 11)), ["a", "b", "c", "d"]);
+});
+
+test("flags toggle and feed the flagged filter", () => {
+  const flagged = toggleFlag(toggleFlag(fresh(), "b"), "e");
+  assert.deepEqual(flagged.flags, { b: true, e: true });
+  assert.deepEqual(ids(newRound({ ...flagged, prefs: prefs({ filter: "flagged" }) }, deck)), ["b", "e"]);
+  assert.deepEqual(toggleFlag(flagged, "b").flags, { e: true });
+});
+
+test("reset progress also clears review days and flags", () => {
+  const state = resetProgress(toggleFlag(grade(fresh(), true, 5), "a"), deck);
+  assert.deepEqual([state.reviewed, state.flags], [{}, {}]);
+});
+
+test("a backup restores progress on another deck state and starts a new round", () => {
+  const studied = toggleFlag(grade(fresh(), true, 7), "c");
+  const restored = importProgress(fresh(), exportProgress(studied), deck);
+  assert.deepEqual(restored.history, { a: "o" });
+  assert.deepEqual(restored.reviewed, { a: 7 });
+  assert.deepEqual(restored.flags, { c: true });
+  assert.equal(restored.session.tape.every((entry) => entry.grade === null), true);
+});
+
+test("text that is not a backup is refused", () => {
+  for (const text of ["", "{", "[]", "{}", JSON.stringify({ format: "other", history: { a: "o" } })]) {
+    assert.equal(importProgress(fresh(), text, deck), null);
+  }
+});
+
+test("invalid review days and flags in saved state are dropped", () => {
+  const state = parseSaved(JSON.stringify({ reviewed: { a: 3, b: "x", c: 1.5 }, flags: { a: true, b: 1 } }), deck);
+  assert.deepEqual(state.reviewed, { a: 3 });
+  assert.deepEqual(state.flags, { a: true });
+});
+
+test("round progress counts graded positions", () => {
+  const state = grade({ ...grade(fresh(), true), session: move(grade(fresh(), true).session, 1) }, false);
+  assert.deepEqual(roundProgress(state.session), { done: 2, total: deck.length + 1, right: 1 });
+});
+
+test("flag, hint and help keys work from any card", () => {
+  assert.deepEqual(keyAction("f", question()), { type: "flag" });
+  assert.deepEqual(keyAction("i", choice()), { type: "hint" });
+  assert.deepEqual(keyAction("?", question()), { type: "help" });
 });

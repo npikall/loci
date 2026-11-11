@@ -7,3 +7,5 @@
 #for a in range(2, 4) {
   q("What is " + str(a) + " squared?")[The answer is #(a * a).]
 }
+
+#sc("Which is a noble gas?", ok: "Neon", err: "Iron", hint: [Glows in signs.], why: [Group 18.])
