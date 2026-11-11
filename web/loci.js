@@ -63,7 +63,8 @@ function store(key, value) {
   }
 }
 
-const save = () => store(STORAGE_KEY, JSON.stringify(state));
+// `known` lets the next load tell new questions from ones the round left out.
+const save = () => store(STORAGE_KEY, JSON.stringify({ ...state, known: deck.map((card) => card.id) }));
 
 let state = parseSaved(readStored(STORAGE_KEY), deck);
 let query = "";

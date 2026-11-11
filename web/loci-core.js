@@ -274,7 +274,14 @@ export function parseSaved(text, deck, random = Math.random) {
   const tape = parseTape(raw.session?.tape, deck);
   if (tape.length === 0) return { ...kept, session: newRound(kept, deck, random) };
   const pos = Number.isInteger(raw.session.pos) ? raw.session.pos : 0;
-  return { ...kept, session: goTo({ tape, pos: 0 }, pos) };
+  return { ...kept, session: goTo({ tape: [...tape, ...addedCards(raw, tape, kept, deck, random)], pos: 0 }, pos) };
+}
+
+// Questions written while a round is in play join its end. `known` lists the
+// deck at the last save, so cards a round left out on purpose stay out.
+function addedCards(raw, tape, kept, deck, random) {
+  const known = new Set([...(Array.isArray(raw.known) ? raw.known : []), ...tape.map((entry) => entry.id)]);
+  return newRound(kept, deck, random).tape.filter((entry) => !known.has(entry.id));
 }
 
 const BACKUP_FORMAT = "loci-progress-1";

@@ -283,8 +283,31 @@ test("a saved session forgets removed questions and clamps its position", () => 
     pos: 9,
     tape: [{ id: "a", grade: true }, { id: "removed", grade: null }, { id: "b", grade: null }, 7, { id: "c", grade: "x" }],
   };
-  const state = parseSaved(JSON.stringify({ session }), deck);
+  const known = deck.map((c) => c.id);
+  const state = parseSaved(JSON.stringify({ session, known }), deck);
   assert.deepEqual(state.session, { pos: 2, tape: [{ id: "a", grade: true }, { id: "b", grade: null }] });
+});
+
+test("questions written during a round join its end", () => {
+  const session = { pos: 2, tape: [{ id: "a", grade: true }, { id: "b", grade: true }] };
+  const state = parseSaved(JSON.stringify({ session, known: ["a", "b", "c", "d"] }), deck);
+  assert.deepEqual(ids(state.session), ["a", "b", "e", "f"]);
+  assert.equal(state.session.pos, 2);
+});
+
+test("questions written during a round respect its filter", () => {
+  const saved = {
+    history: { e: "ooo" },
+    prefs: { filter: "due" },
+    session: { pos: 0, tape: [{ id: "a", grade: null }] },
+    known: ["a", "b", "c", "d"],
+  };
+  assert.deepEqual(ids(parseSaved(JSON.stringify(saved), deck).session), ["a", "f"]);
+});
+
+test("progress saved before the deck was recorded gains the missing questions", () => {
+  const session = { pos: 0, tape: [{ id: "a", grade: null }] };
+  assert.deepEqual(ids(parseSaved(JSON.stringify({ session }), deck).session), deck.map((c) => c.id));
 });
 
 test("a saved position that is not a whole number restarts at the beginning", () => {
