@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/logo/loci.svg" alt="loci logo" width="260">
+</p>
+
 # loci
 
 Study questions written in [Typst](https://typst.app), practised in the browser.
@@ -44,21 +48,20 @@ typst compile --input answers=hide study.typ # sheet to test yourself on paper
 | `mc`     | Multiple choice, at least one `ok` option         |
 | `q`      | Free recall, reveal the answer and grade yourself |
 
-Prompts, options and answers accept any Typst content. Headings become
-sections you can filter by. See `examples/example.typ` for a tour of every
-feature.
+Prompts, options and answers accept any Typst content. Headings become sections
+you can filter by. See `examples/example.typ` for a tour of every feature.
 
-| Argument | On           | Meaning                                                 |
-| -------- | ------------ | ------------------------------------------------------- |
-| `n`      | all          | How often the question was asked, e.g. in past exams    |
-| `hint`   | all          | Help that can be opened before answering                |
-| `why`    | `sc`, `mc`   | Explanation shown once the question is checked          |
-| `vars`   | `q`          | Values drawn per seed, see [Random values](#random-values) |
+| Argument | On         | Meaning                                                    |
+| -------- | ---------- | ---------------------------------------------------------- |
+| `n`      | all        | How often the question was asked, e.g. in past exams       |
+| `hint`   | all        | Help that can be opened before answering                   |
+| `why`    | `sc`, `mc` | Explanation shown once the question is checked             |
+| `vars`   | `q`        | Values drawn per seed, see [Random values](#random-values) |
 
 ## Random values
 
-`q` can draw the numbers of a question, so one file gives many versions of
-the same exercise:
+`q` can draw the numbers of a question, so one file gives many versions of the
+same exercise:
 
 ```typ
 #q(
@@ -69,11 +72,11 @@ the same exercise:
 ```
 
 `vars` names arrays of candidates. One value per name is drawn, and `prompt`,
-`answer` and `hint` may be functions that take the drawn values. Candidates
-can be anything: numbers, text or content.
+`answer` and `hint` may be functions that take the drawn values. Candidates can
+be anything: numbers, text or content.
 
-The seed decides which values are drawn. It is any text, for example a
-student's name:
+The seed decides which values are drawn. It is any text, for example a student's
+name:
 
 ```sh
 typst compile --input seed=anna exam.typ anna.pdf
@@ -82,7 +85,8 @@ typst compile --input seed=anna --input answers=hide exam.typ anna-sheet.pdf
 
 - The same seed always gives the same values, so a sheet and its answer key
   match. Without `--input seed`, the seed is `0`.
-- Import `seed` to print it on the sheet: `#import "@local/loci:0.1.0": q, seed`.
+- Import `seed` to print it on the sheet:
+  `#import "@local/loci:0.1.0": q, seed`.
 - A draw depends on the seed, the question's number and the variable's name.
   Adding or removing a question before it changes its values.
 - `loci` serves the values of seed `0`.
@@ -91,16 +95,16 @@ typst compile --input seed=anna --input answers=hide exam.typ anna-sheet.pdf
 
 - **Cards** asks one question at a time and brings a missed card back a few
   cards later. **List** shows the whole document, with search.
-- A card is mastered after three right answers in a row. Right answers also
-  push its next review further away: 1, 3, 7, 14, 30, then 60 days. The filter
-  **Due for review** picks what is due today.
+- A card is mastered after three right answers in a row. Right answers also push
+  its next review further away: 1, 3, 7, 14, 30, then 60 days. The filter **Due
+  for review** picks what is due today.
 - **Flag** cards you want to come back to and study them with the filter
   **Flagged**.
 - Press `?` for the keyboard shortcuts. Everything can be undone with `U`.
 
 The page reloads itself when the file, or another file in its folder, changes.
-Progress is saved in the browser, per file. **Menu › Export progress** writes
-it to a file that **Import progress** reads back, on this or another machine.
+Progress is saved in the browser, per file. **Menu › Export progress** writes it
+to a file that **Import progress** reads back, on this or another machine.
 
 ## Printing
 
@@ -113,17 +117,17 @@ typst compile --input answers=hide study.typ sheet.pdf   # blank sheet
 
 `answers` defaults to `show`. With `answers=hide` the sheet changes like this:
 
-| Part        | With answers             | Without answers                         |
-| ----------- | ------------------------ | --------------------------------------- |
-| `sc`, `mc`  | Correct options marked   | No marks, options in a different order  |
-| `q`         | Answer printed           | Empty space to write in                 |
-| Notes       | `why`                    | `hint`                                  |
+| Part       | With answers           | Without answers                        |
+| ---------- | ---------------------- | -------------------------------------- |
+| `sc`, `mc` | Correct options marked | No marks, options in a different order |
+| `q`        | Answer printed         | Empty space to write in                |
+| Notes      | `why`                  | `hint`                                 |
 
-Options are reordered because the source lists the `ok` options first. The
-order is fixed per question, so the sheet is the same on every compile.
+Options are reordered because the source lists the `ok` options first. The order
+is fixed per question, so the sheet is the same on every compile.
 
-The flag only affects the PDF. In the browser, answers always stay hidden
-until you check or reveal them.
+The flag only affects the PDF. In the browser, answers always stay hidden until
+you check or reveal them.
 
 ## Development
 

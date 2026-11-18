@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 560 520" width="560" height="520">
+  <title>loci</title>
+  <defs>
+    <path id="fc" d="M182,236 Q280,228 378,236 Q414,238 416,276 Q420,356 414,424 Q410,460 374,462 Q280,468 186,462 Q150,460 146,424 Q140,350 146,276 Q148,238 182,236 Z"/>
+    <path id="cr" d="M136,242 Q280,222 424,242 L430,344 Q404,334 398,300 Q330,292 280,338 Q230,292 162,300 Q156,334 130,344 Z"/>
+    <g id="hn">
+      <path d="M146,264 C68,214 54,120 102,22 C112,120 150,196 212,240 Z"/>
+      <path d="M414,264 C492,214 506,120 458,22 C448,120 410,196 348,240 Z"/>
+    </g>
+  </defs>
+  <g stroke="#1D2A24" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="#fff">
+    <!-- back card (green) -->
+    <rect x="184" y="262" width="272" height="230" rx="44" fill="#4C9A63" transform="rotate(5 320 377)"/>
+    <!-- horns -->
+    <use xlink:href="#hn" stroke="#fff" stroke-width="36"/>
+    <use xlink:href="#hn" fill="#F2B33D"/>
+    <path d="M94,100 Q88,150 112,194 M466,100 Q472,150 448,194" fill="none" stroke="#fff" stroke-width="10"/>
+    <!-- front card with knockout -->
+    <use xlink:href="#fc" stroke="#fff" stroke-width="40"/>
+    <use xlink:href="#fc"/>
+    <!-- crown with knockout -->
+    <use xlink:href="#cr" stroke="#fff" stroke-width="36"/>
+    <use xlink:href="#cr" fill="#F2B33D"/>
+    <!-- emerald gem -->
+    <path d="M280,254 L298,276 L280,300 L262,276 Z" fill="#4C9A63"/>
+    <!-- card lines -->
+    <path d="M196,388 Q260,382 330,388 M196,424 Q240,420 280,424" fill="none"/>
+    <circle cx="362" cy="424" r="10" fill="#1D2A24" stroke="none"/>
+    <!-- magic sparkle -->
+    <path d="M280,96 Q284,128 312,132 Q284,136 280,168 Q276,136 248,132 Q276,128 280,96 Z" fill="#4C9A63"/>
+    <circle cx="232" cy="80" r="8" fill="#1D2A24" stroke="none"/>
+    <circle cx="330" cy="186" r="8" fill="#1D2A24" stroke="none"/>
+  </g>
+</svg>
