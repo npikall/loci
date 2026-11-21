@@ -37,6 +37,9 @@ var themeBoot string
 //go:embed web/loci-reload.js
 var reload string
 
+//go:embed docs/logo/loci.svg
+var favicon string
+
 const usage = `usage: loci [--no-open] [--port N] [--theme NAME] <file.typ>
 
   --no-open     do not open the browser
@@ -157,7 +160,7 @@ func render(path, theme string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("typst: %w\n%s", err, stderr.String())
 	}
-	assets := `<link rel="icon" href="data:,"><script data-default-theme="` + theme + `">` + themeBoot + `</script><style>` + css + `</style><script type="module">` + js + "</script><script>" + reload + "</script></head>"
+	assets := `<link rel="icon" href="/favicon.svg" type="image/svg+xml"><script data-default-theme="` + theme + `">` + themeBoot + `</script><style>` + css + `</style><script type="module">` + js + "</script><script>" + reload + "</script></head>"
 	return bytes.Replace(page, []byte("</head>"), []byte(assets), 1), nil
 }
 
@@ -170,7 +173,7 @@ func handler(load func() ([]byte, error), stamp func() string) http.Handler {
 		page, err := load()
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "<!doctype html><title>loci: compile error</title><link rel=\"icon\" href=\"data:,\"><script>%s</script><pre>%s</pre>", reload, html.EscapeString(err.Error()))
+			fmt.Fprintf(w, "<!doctype html><title>loci: compile error</title><link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\"><script>%s</script><pre>%s</pre>", reload, html.EscapeString(err.Error()))
 			return
 		}
 		w.Write(page)
@@ -178,6 +181,10 @@ func handler(load func() ([]byte, error), stamp func() string) http.Handler {
 	mux.HandleFunc("GET /loci-core.js", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
 		fmt.Fprint(w, core)
+	})
+	mux.HandleFunc("GET /favicon.svg", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "image/svg+xml")
+		fmt.Fprint(w, favicon)
 	})
 	mux.HandleFunc("GET /stamp", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")

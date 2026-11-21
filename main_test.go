@@ -193,6 +193,16 @@ func TestHandlerReturnsNotFoundForOtherPaths(t *testing.T) {
 	}
 }
 
+func TestHandlerServesLogoAsFavicon(t *testing.T) {
+	rec := get(handler(staticPage(""), noStamp), "/favicon.svg", "127.0.0.1:1")
+	if rec.Code != http.StatusOK || rec.Body.String() != favicon {
+		t.Fatalf("got %d %q", rec.Code, rec.Body)
+	}
+	if got := rec.Header().Get("Content-Type"); got != "image/svg+xml" {
+		t.Errorf("content type %q", got)
+	}
+}
+
 func TestHandlerRendersEveryRequestSoEditsAppearOnReload(t *testing.T) {
 	version := 0
 	h := handler(func() ([]byte, error) {
