@@ -15,7 +15,7 @@ fmt:
 #run the tests
 test:
     go test ./...
-    node --test web/
+    bun test web/
 
 # run the server
 run *args=ex:
