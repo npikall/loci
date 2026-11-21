@@ -53,6 +53,7 @@ package into your local package directory so `@local/loci` resolves.
 ```sh
 loci study.typ                               # serve and open in the browser
 loci --no-open --port 5000 study.typ         # fixed port, no browser
+loci --theme gruvbox study.typ               # start with another color theme
 typst compile study.typ                      # printable PDF with answers
 typst compile --input answers=hide study.typ # sheet to test yourself on paper
 ```
@@ -92,6 +93,25 @@ For a tour of every feature have a look at
 The page reloads itself when the file, or another file in its folder, changes.
 Progress is stored in the browser, per file. **Menu › Export progress** writes
 it to a file that **Import progress** reads back, on this or another machine.
+
+## Themes
+
+**Menu** has two pickers: the color theme and the mode, which is light, dark or
+whatever your system prefers. Each theme has a light and a dark version:
+
+| Theme         | Light          | Dark           |
+| ------------- | -------------- | -------------- |
+| `loci`        | loci light     | loci dark      |
+| `catppuccin`  | Latte          | Mocha          |
+| `gruvbox`     | light (medium) | dark (medium)  |
+| `rose-pine`   | Dawn           | Main           |
+| `tokyo-night` | Day            | Night          |
+| `solarized`   | light          | dark           |
+| `everforest`  | light (medium) | dark (medium)  |
+
+`--theme NAME`, or the `LOCI_THEME` environment variable, sets the theme a file
+starts with. Once you pick a theme in the browser, that choice wins. Like
+progress, it is stored per file.
 
 ## Random values
 

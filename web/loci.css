@@ -13,12 +13,93 @@
   --pager-height: 7.5rem;
 }
 
-:root[data-theme="light"] {
+:root[data-scheme="light"] {
   color-scheme: light;
 }
 
-:root[data-theme="dark"] {
+:root[data-scheme="dark"] {
   color-scheme: dark;
+}
+
+/* Themes. Each one sets the light and dark color of every slot above, taken
+   from the official palette. web/loci-themes.test.js checks their contrast. */
+
+/* Catppuccin: Latte and Mocha */
+:root[data-theme="catppuccin"] {
+  --bg: light-dark(#e6e9ef, #181825);
+  --surface: light-dark(#eff1f5, #1e1e2e);
+  --text: light-dark(#4c4f69, #cdd6f4);
+  --muted: light-dark(#5c5f77, #a6adc8);
+  --line: light-dark(#bcc0cc, #45475a);
+  --inverted: light-dark(#eff1f5, #11111b);
+  --primary: light-dark(#8839ef, #cba6f7);
+  --right: light-dark(#179299, #a6e3a1);
+  --wrong: light-dark(#d20f39, #f38ba8);
+}
+
+/* Gruvbox: light and dark, medium contrast */
+:root[data-theme="gruvbox"] {
+  --bg: light-dark(#fbf1c7, #282828);
+  --surface: light-dark(#fbf1c7, #282828);
+  --text: light-dark(#3c3836, #ebdbb2);
+  --muted: light-dark(#665c54, #a89984);
+  --line: light-dark(#d5c4a1, #504945);
+  --inverted: light-dark(#fbf1c7, #1d2021);
+  --primary: light-dark(#af3a03, #fe8019);
+  --right: light-dark(#79740e, #b8bb26);
+  --wrong: light-dark(#9d0006, #fb4934);
+}
+
+/* Rosé Pine: Dawn and Main */
+:root[data-theme="rose-pine"] {
+  --bg: light-dark(#faf4ed, #191724);
+  --surface: light-dark(#fffaf3, #1f1d2e);
+  --text: light-dark(#575279, #e0def4);
+  --muted: light-dark(#797593, #908caa);
+  --line: light-dark(#cecacd, #524f67);
+  --inverted: light-dark(#fffaf3, #191724);
+  --primary: light-dark(#907aa9, #c4a7e7);
+  --right: light-dark(#286983, #9ccfd8);
+  --wrong: light-dark(#b4637a, #eb6f92);
+}
+
+/* Tokyo Night: Day and Night */
+:root[data-theme="tokyo-night"] {
+  --bg: light-dark(#e1e2e7, #16161e);
+  --surface: light-dark(#e1e2e7, #1a1b26);
+  --text: light-dark(#3760bf, #c0caf5);
+  --muted: light-dark(#6172b0, #a9b1d6);
+  --line: light-dark(#a8aecb, #3b4261);
+  --inverted: light-dark(#e1e2e7, #16161e);
+  --primary: light-dark(#2e7de9, #7aa2f7);
+  --right: light-dark(#587539, #9ece6a);
+  --wrong: light-dark(#c64343, #f7768e);
+}
+
+/* Solarized: light and dark */
+:root[data-theme="solarized"] {
+  --bg: light-dark(#fdf6e3, #002b36);
+  --surface: light-dark(#fdf6e3, #002b36);
+  --text: light-dark(#073642, #93a1a1);
+  --muted: light-dark(#586e75, #839496);
+  --line: light-dark(#93a1a1, #586e75);
+  --inverted: light-dark(#fdf6e3, #002b36);
+  --primary: light-dark(#268bd2, #268bd2);
+  --right: light-dark(#859900, #859900);
+  --wrong: light-dark(#dc322f, #dc322f);
+}
+
+/* Everforest: light and dark, medium contrast */
+:root[data-theme="everforest"] {
+  --bg: light-dark(#fdf6e3, #232a2e);
+  --surface: light-dark(#fdf6e3, #2d353b);
+  --text: light-dark(#5c6a72, #d3c6aa);
+  --muted: light-dark(#829181, #9da9a0);
+  --line: light-dark(#bdc3af, #475258);
+  --inverted: light-dark(#fdf6e3, #232a2e);
+  --primary: light-dark(#3a94c5, #7fbbb3);
+  --right: light-dark(#35a77c, #a7c080);
+  --wrong: light-dark(#f85552, #e67e80);
 }
 
 *,

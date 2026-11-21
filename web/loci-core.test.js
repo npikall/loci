@@ -4,6 +4,7 @@ import {
   MASTERY_STREAK,
   REPEAT_GAP,
   REVIEW_DAYS,
+  THEMES,
   cardIds,
   cardStats,
   dayOf,
@@ -19,6 +20,7 @@ import {
   move,
   newRound,
   overview,
+  parseScheme,
   parseSaved,
   parseTheme,
   repeatMissed,
@@ -384,11 +386,31 @@ test("an ungraded copy earlier on the tape does not count as a pending repeat", 
 });
 
 test("a stored theme is kept when valid", () => {
-  for (const theme of ["system", "light", "dark"]) assert.equal(parseTheme(theme), theme);
+  for (const theme of ["loci", "catppuccin", "gruvbox", "rose-pine", "tokyo-night", "solarized", "everforest"]) {
+    assert.equal(parseTheme(theme, "loci"), theme);
+  }
 });
 
-test("a missing or unknown theme follows the system", () => {
-  for (const raw of [null, "", "sepia", "__proto__"]) assert.equal(parseTheme(raw), "system");
+test("a missing or unknown theme falls back to the default", () => {
+  for (const raw of [null, "", "sepia", "dark", "__proto__", "toString"]) assert.equal(parseTheme(raw, "gruvbox"), "gruvbox");
+});
+
+test("an unknown default theme falls back to loci", () => {
+  assert.equal(parseTheme(null, "sepia"), "loci");
+});
+
+test("every theme has a name to show in the picker", () => {
+  assert.equal(THEMES.catppuccin, "Catppuccin");
+  assert.equal(THEMES["rose-pine"], "Rosé Pine");
+  assert.equal(Object.keys(THEMES)[0], "loci");
+});
+
+test("a stored scheme is kept when valid", () => {
+  for (const scheme of ["system", "light", "dark"]) assert.equal(parseScheme(scheme), scheme);
+});
+
+test("a missing or unknown scheme follows the system", () => {
+  for (const raw of [null, "", "sepia", "__proto__"]) assert.equal(parseScheme(raw), "system");
 });
 
 test("a day number changes at local midnight", () => {

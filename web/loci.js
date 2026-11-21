@@ -1,5 +1,6 @@
 import {
   MASTERY_STREAK,
+  THEMES,
   cardIds,
   cardStats,
   dayOf,
@@ -12,6 +13,7 @@ import {
   move,
   newRound,
   overview,
+  parseScheme,
   parseSaved,
   parseTheme,
   repeatMissed,
@@ -24,7 +26,13 @@ import {
 } from "/loci-core.js";
 
 const STORAGE_KEY = "loci";
-const THEME_KEY = "loci-theme";
+// The server's default (--theme or LOCI_THEME) only applies until the reader picks a theme.
+const DEFAULT_THEME = parseTheme(document.querySelector("script[data-default-theme]")?.dataset.defaultTheme);
+// How the page looks, apart from study state. web/loci-theme.js reads the same keys.
+const APPEARANCE = {
+  theme: { key: "loci-theme", parse: (raw) => parseTheme(raw, DEFAULT_THEME) },
+  scheme: { key: "loci-scheme", parse: parseScheme },
+};
 const TOAST_MS = 2500;
 const questions = [...document.querySelectorAll(".loci-question")];
 
@@ -60,6 +68,14 @@ function store(key, value) {
     localStorage.setItem(key, value);
   } catch {
     // Private windows may refuse storage; the session still works until reload.
+  }
+}
+
+function forget(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Storage that refuses reads holds nothing to forget.
   }
 }
 
@@ -186,9 +202,14 @@ function buildInterface() {
            <summary aria-label="More" title="More">Menu</summary>
            <div class="loci-menu-items">
              <select id="loci-theme" aria-label="Theme">
-               <option value="system">System theme</option>
-               <option value="light">Light theme</option>
-               <option value="dark">Dark theme</option>
+               ${Object.entries(THEMES)
+                 .map(([id, name]) => `<option value="${id}">${name}</option>`)
+                 .join("")}
+             </select>
+             <select id="loci-scheme" aria-label="Mode">
+               <option value="system">System mode</option>
+               <option value="light">Light mode</option>
+               <option value="dark">Dark mode</option>
              </select>
              <button type="button" id="loci-restart">Restart round</button>
              <button type="button" id="loci-shortcuts">Keyboard shortcuts</button>
@@ -491,10 +512,24 @@ function setMode(mode) {
   enter();
 }
 
-function setTheme(theme) {
-  document.documentElement.dataset.theme = theme;
-  byId("loci-theme").value = theme;
-  store(THEME_KEY, theme);
+// Applying is separate from storing, so loading the page never saves the server's default.
+function applyAppearance(name, raw) {
+  const value = APPEARANCE[name].parse(raw);
+  document.documentElement.dataset[name] = value;
+  byId(`loci-${name}`).value = value;
+  return value;
+}
+
+function pickAppearance(name, raw) {
+  store(APPEARANCE[name].key, applyAppearance(name, raw));
+}
+
+// An invalid saved value, like a scheme saved before themes existed, is dropped
+// so the boot script stops applying it before the first paint.
+function restoreAppearance(name) {
+  const { key } = APPEARANCE[name];
+  const saved = readStored(key);
+  if (applyAppearance(name, saved) !== saved && saved !== null) forget(key);
 }
 
 function flag(id) {
@@ -603,14 +638,15 @@ function onClick(event) {
     const el = event.target.closest(selector);
     if (el) run(el);
   }
-  if (!event.target.closest(".loci-menu > summary, #loci-theme")) closeMenu();
+  if (!event.target.closest(".loci-menu > summary, #loci-theme, #loci-scheme")) closeMenu();
   // Keep Space and Enter for the shortcuts instead of re-triggering the focused control.
   if (event.target.closest("button, label, summary")) requestAnimationFrame(() => document.activeElement?.blur());
 }
 
 function onChange(event) {
   const { id, dataset, files } = event.target;
-  if (id === "loci-theme") setTheme(parseTheme(event.target.value));
+  if (id === "loci-theme") pickAppearance("theme", event.target.value);
+  if (id === "loci-scheme") pickAppearance("scheme", event.target.value);
   if (id === "loci-file") {
     restoreProgress(files[0]);
     event.target.value = "";
@@ -621,7 +657,8 @@ function onChange(event) {
 questions.forEach(decorate);
 questions.filter(isChoice).forEach(shuffleOptions);
 buildInterface();
-setTheme(parseTheme(readStored(THEME_KEY)));
+restoreAppearance("theme");
+restoreAppearance("scheme");
 document.addEventListener("click", onClick);
 document.addEventListener("keydown", onKey);
 document.addEventListener("change", onChange);

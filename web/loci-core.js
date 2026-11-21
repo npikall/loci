@@ -10,7 +10,8 @@
 //   reviewed per card id, the day number of its last grade
 //   due      a card is due when its streak-based interval since that day has passed
 //   flags    card ids the student marked to come back to
-//   theme    color scheme of the page; stored apart from study state so Undo never changes it
+//   theme    color set of the page, like Gruvbox; stored apart from study state so Undo never changes it
+//   scheme   light or dark version of the theme, or whatever the system prefers; stored like theme
 
 export const MASTERY_STREAK = 3;
 export const REPEAT_GAP = 3;
@@ -310,7 +311,22 @@ export function roundProgress({ tape }) {
   return { done, total: tape.length, right: tape.filter((entry) => entry.grade === true).length };
 }
 
-export const parseTheme = (raw) => (["light", "dark"].includes(raw) ? raw : "system");
+/** Theme ids, as in web/loci.css and main.go, with their names. The first is the default. */
+export const THEMES = {
+  loci: "Loci",
+  catppuccin: "Catppuccin",
+  gruvbox: "Gruvbox",
+  "rose-pine": "Rosé Pine",
+  "tokyo-night": "Tokyo Night",
+  solarized: "Solarized",
+  everforest: "Everforest",
+};
+
+const isTheme = (raw) => typeof raw === "string" && Object.hasOwn(THEMES, raw);
+
+export const parseTheme = (raw, fallback) => (isTheme(raw) ? raw : isTheme(fallback) ? fallback : Object.keys(THEMES)[0]);
+
+export const parseScheme = (raw) => (["light", "dark"].includes(raw) ? raw : "system");
 
 const NAVIGATION = {
   ArrowRight: "next",

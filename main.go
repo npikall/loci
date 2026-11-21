@@ -3,6 +3,7 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	_ "embed"
 	"errors"
 	"flag"
@@ -16,7 +17,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
+	"strings"
 )
 
 //go:embed web/loci.css
@@ -28,19 +31,27 @@ var js string
 //go:embed web/loci-core.js
 var core string
 
+//go:embed web/loci-theme.js
+var themeBoot string
+
 //go:embed web/loci-reload.js
 var reload string
 
-const usage = `usage: loci [--no-open] [--port N] <file.typ>
+const usage = `usage: loci [--no-open] [--port N] [--theme NAME] <file.typ>
 
-  --no-open   do not open the browser
-  --port N    listen on port N instead of the port derived from the file path`
+  --no-open     do not open the browser
+  --port N      listen on port N instead of the port derived from the file path
+  --theme NAME  color theme until one is picked in the browser (default: $LOCI_THEME or loci)`
+
+// themes are the color themes in web/loci.css. The first one is the default.
+var themes = []string{"loci", "catppuccin", "gruvbox", "rose-pine", "tokyo-night", "solarized", "everforest"}
 
 // options is what the command line asks for.
 type options struct {
 	path   string
 	port   int
 	noOpen bool
+	theme  string
 }
 
 func parseArgs(args []string) (options, error) {
@@ -49,11 +60,15 @@ func parseArgs(args []string) (options, error) {
 	flags.SetOutput(io.Discard)
 	flags.BoolVar(&opts.noOpen, "no-open", false, "")
 	flags.IntVar(&opts.port, "port", 0, "")
+	flags.StringVar(&opts.theme, "theme", cmp.Or(os.Getenv("LOCI_THEME"), themes[0]), "")
 	if err := flags.Parse(args); err != nil || flags.NArg() != 1 || filepath.Ext(flags.Arg(0)) != ".typ" {
 		return opts, errors.New(usage)
 	}
 	if opts.port < 0 || opts.port > 65535 {
 		return opts, errors.New(usage)
+	}
+	if !slices.Contains(themes, opts.theme) {
+		return opts, fmt.Errorf("unknown theme %q, choose one of: %s", opts.theme, strings.Join(themes, ", "))
 	}
 	opts.path = flags.Arg(0)
 	return opts, nil
@@ -72,7 +87,7 @@ func run(args []string, open func(string) error) error {
 		return err
 	}
 	path := opts.path
-	if _, err := render(path); err != nil {
+	if _, err := render(path, opts.theme); err != nil {
 		return err
 	}
 	listener, err := listen(path, opts.port)
@@ -86,7 +101,7 @@ func run(args []string, open func(string) error) error {
 			fmt.Fprintln(os.Stderr, "loci: could not open browser:", err)
 		}
 	}
-	load := func() ([]byte, error) { return render(path) }
+	load := func() ([]byte, error) { return render(path, opts.theme) }
 	return http.Serve(listener, handler(load, func() string { return stamp(path) }))
 }
 
@@ -133,7 +148,8 @@ func listen(path string, port int) (net.Listener, error) {
 }
 
 // render compiles to stdout, so nothing is left on disk after shutdown.
-func render(path string) ([]byte, error) {
+// theme is the default until the reader picks one; it must be one of themes.
+func render(path, theme string) ([]byte, error) {
 	var stderr bytes.Buffer
 	cmd := exec.Command("typst", "compile", "--features", "html", "--format", "html", path, "-")
 	cmd.Stderr = &stderr
@@ -141,7 +157,7 @@ func render(path string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("typst: %w\n%s", err, stderr.String())
 	}
-	assets := `<link rel="icon" href="data:,"><style>` + css + `</style><script type="module">` + js + "</script><script>" + reload + "</script></head>"
+	assets := `<link rel="icon" href="data:,"><script data-default-theme="` + theme + `">` + themeBoot + `</script><style>` + css + `</style><script type="module">` + js + "</script><script>" + reload + "</script></head>"
 	return bytes.Replace(page, []byte("</head>"), []byte(assets), 1), nil
 }
 

@@ -14,6 +14,7 @@ fmt:
 #run the tests
 test:
     go test ./...
+    node --test web/
 
 #build the binary
 build:

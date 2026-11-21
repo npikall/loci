@@ -35,7 +35,7 @@ func usePackage(t *testing.T) {
 
 func TestRenderProducesQuestionMarkup(t *testing.T) {
 	usePackage(t)
-	page, err := render("testdata/study.typ")
+	page, err := render("testdata/study.typ", "loci")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +58,7 @@ func TestRenderProducesQuestionMarkup(t *testing.T) {
 
 func TestRenderIncludesStyleAndScript(t *testing.T) {
 	usePackage(t)
-	page, err := render("testdata/study.typ")
+	page, err := render("testdata/study.typ", "loci")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,8 +71,24 @@ func TestRenderIncludesStyleAndScript(t *testing.T) {
 	}
 }
 
+func TestRenderAppliesThemeBeforeStyle(t *testing.T) {
+	usePackage(t)
+	page, err := render("testdata/study.typ", "gruvbox")
+	if err != nil {
+		t.Fatal(err)
+	}
+	head, _, _ := strings.Cut(string(page), "</head>")
+	boot := strings.Index(head, `<script data-default-theme="gruvbox">`+themeBoot+"</script>")
+	if boot < 0 {
+		t.Fatalf("head lacks theme boot script with default gruvbox")
+	}
+	if style := strings.Index(head, "<style>"+css); style < boot {
+		t.Error("style comes before the theme boot script, so the page may flash the wrong theme")
+	}
+}
+
 func TestRenderReportsTypstDiagnostics(t *testing.T) {
-	_, err := render("testdata/broken.typ")
+	_, err := render("testdata/broken.typ", "loci")
 	if err == nil || !strings.Contains(err.Error(), "unknown variable") {
 		t.Fatalf("want typst diagnostic, got %v", err)
 	}
@@ -124,6 +140,13 @@ func visit(t *testing.T, launchErr error) (string, string) {
 func TestRunServesRenderedPageToOpenedBrowser(t *testing.T) {
 	if _, body := visit(t, nil); !strings.Contains(body, "carrot") {
 		t.Fatalf("browser did not receive the study: %s", body)
+	}
+}
+
+func TestRunServesChosenThemeAsDefault(t *testing.T) {
+	t.Setenv("LOCI_THEME", "everforest")
+	if _, body := visit(t, nil); !strings.Contains(body, `data-default-theme="everforest"`) {
+		t.Fatal("served page does not default to the chosen theme")
 	}
 }
 
@@ -272,7 +295,7 @@ func TestListenFallsBackWhenPortIsTaken(t *testing.T) {
 
 func TestRenderEmitsFrequencyForSorting(t *testing.T) {
 	usePackage(t)
-	page, err := render("testdata/study.typ")
+	page, err := render("testdata/study.typ", "loci")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -284,7 +307,7 @@ func TestRenderEmitsFrequencyForSorting(t *testing.T) {
 
 func TestRenderRejectsNonIntegerFrequency(t *testing.T) {
 	usePackage(t)
-	_, err := render("testdata/bad-frequency.typ")
+	_, err := render("testdata/bad-frequency.typ", "loci")
 	if err == nil || !strings.Contains(err.Error(), "positive integer") {
 		t.Fatalf("want frequency diagnostic, got %v", err)
 	}
@@ -304,12 +327,67 @@ func TestBrowserCommand(t *testing.T) {
 }
 
 func TestParseArgsReadsFlags(t *testing.T) {
-	opts, err := parseArgs([]string{"--no-open", "--port", "5123", "notes.typ"})
+	t.Setenv("LOCI_THEME", "")
+	opts, err := parseArgs([]string{"--no-open", "--port", "5123", "--theme", "gruvbox", "notes.typ"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := (options{path: "notes.typ", port: 5123, noOpen: true}); opts != want {
+	if want := (options{path: "notes.typ", port: 5123, noOpen: true, theme: "gruvbox"}); opts != want {
 		t.Errorf("got %+v, want %+v", opts, want)
+	}
+}
+
+func TestParseArgsDefaultsToLociTheme(t *testing.T) {
+	t.Setenv("LOCI_THEME", "")
+	opts, err := parseArgs([]string{"notes.typ"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if opts.theme != "loci" {
+		t.Errorf("theme = %q, want loci", opts.theme)
+	}
+}
+
+func TestParseArgsReadsThemeFromEnvironment(t *testing.T) {
+	t.Setenv("LOCI_THEME", "rose-pine")
+	opts, err := parseArgs([]string{"notes.typ"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if opts.theme != "rose-pine" {
+		t.Errorf("theme = %q, want rose-pine", opts.theme)
+	}
+}
+
+func TestParseArgsPrefersThemeFlagOverEnvironment(t *testing.T) {
+	t.Setenv("LOCI_THEME", "rose-pine")
+	opts, err := parseArgs([]string{"--theme", "tokyo-night", "notes.typ"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if opts.theme != "tokyo-night" {
+		t.Errorf("theme = %q, want tokyo-night", opts.theme)
+	}
+}
+
+func TestParseArgsRejectsUnknownThemeAndListsValidOnes(t *testing.T) {
+	for name, tc := range map[string]struct {
+		env  string
+		args []string
+	}{
+		"flag": {"", []string{"--theme", "sepia", "notes.typ"}},
+		"env":  {"sepia", []string{"notes.typ"}},
+	} {
+		t.Setenv("LOCI_THEME", tc.env)
+		_, err := parseArgs(tc.args)
+		if err == nil {
+			t.Fatalf("%s: unknown theme accepted", name)
+		}
+		for _, want := range []string{"sepia", "loci", "catppuccin", "gruvbox", "rose-pine", "tokyo-night", "solarized", "everforest"} {
+			if !strings.Contains(err.Error(), want) {
+				t.Errorf("%s: error %q does not mention %q", name, err, want)
+			}
+		}
 	}
 }
 
@@ -388,7 +466,7 @@ func TestErrorPageReloadsItselfOnceFixed(t *testing.T) {
 
 func TestRenderEmitsHintAndExplanation(t *testing.T) {
 	usePackage(t)
-	page, err := render("testdata/study.typ")
+	page, err := render("testdata/study.typ", "loci")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -402,7 +480,7 @@ func TestRenderEmitsHintAndExplanation(t *testing.T) {
 
 func TestRenderFillsDrawnValuesIntoQuestion(t *testing.T) {
 	usePackage(t)
-	page, err := render("testdata/study.typ")
+	page, err := render("testdata/study.typ", "loci")
 	if err != nil {
 		t.Fatal(err)
 	}
