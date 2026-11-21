@@ -2,6 +2,7 @@
 set default-list := true
 
 bin := "loci"
+ex := "examples/example.typ"
 
 #run the linter
 lint:
@@ -15,6 +16,10 @@ fmt:
 test:
     go test ./...
     node --test web/
+
+# run the server
+run *args=ex:
+    go run . {{ args }}
 
 #build the binary
 build:
