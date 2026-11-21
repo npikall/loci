@@ -211,6 +211,7 @@ function buildInterface() {
                <option value="light">Light mode</option>
                <option value="dark">Dark mode</option>
              </select>
+             <hr>
              <button type="button" id="loci-restart">Restart round</button>
              <button type="button" id="loci-shortcuts">Keyboard shortcuts</button>
              <button type="button" id="loci-export">Export progress</button>
